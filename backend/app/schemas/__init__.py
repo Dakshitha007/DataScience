@@ -1,10 +1,2 @@
 from .user import UserCreate, UserResponse
-from .officer import OfficerCreate, OfficerResponse
-from .case import CaseCreate, CaseResponse
-from .crime import CrimeCreate, CrimeResponse
-from .victim import VictimCreate, VictimResponse
-from .suspect import SuspectCreate, SuspectResponse
-from .evidence import EvidenceCreate, EvidenceResponse
-from .chat_history import ChatHistoryCreate, ChatHistoryResponse
-from .ai_report import AIReportCreate, AIReportResponse
-from .prediction import PredictionCreate, PredictionResponse
+from .case import CaseCreate, CaseUpdate, CaseResponse
