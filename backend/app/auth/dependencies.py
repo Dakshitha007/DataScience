@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException, status
-from jose import JWTError
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.auth.oauth2 import oauth2_scheme
-from app.auth.jwt_handler import verify_access_token
+from app.auth.jwt_handler import SECRET_KEY, ALGORITHM
 from app.database.session import get_db
 from app.models.user import User
 
@@ -12,28 +12,34 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ):
-    payload = verify_access_token(token)
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={
+            "WWW-Authenticate": "Bearer"
+        },
+    )
 
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
         )
 
-    email = payload.get("sub")
+        email = payload.get("sub")
 
-    if email is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
-        )
+        if email is None:
+            raise credentials_exception
 
-    user = db.query(User).filter(User.email == email).first()
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(
+        User.email == email
+    ).first()
 
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        raise credentials_exception
 
     return user

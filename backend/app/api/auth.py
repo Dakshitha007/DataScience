@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -27,7 +28,7 @@ def register(
 
     if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
 
@@ -36,31 +37,38 @@ def register(
 
 @router.post("/login")
 def login(
-    email: str,
-    password: str,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user: User | None = get_user_by_email(db, email)
+    # OAuth2 uses the "username" field.
+    # We'll use it to send the user's email.
+    user: User | None = get_user_by_email(
+        db,
+        form_data.username
+    )
 
     if user is None:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
 
-    if not verify_password(password, user.password):
+    if not verify_password(
+        form_data.password,
+        user.password
+    ):
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
 
-    token = create_access_token(
+    access_token = create_access_token(
         {
             "sub": user.email
         }
     )
 
     return {
-        "access_token": token,
+        "access_token": access_token,
         "token_type": "bearer"
     }
