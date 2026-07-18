@@ -1,11 +1,13 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from app.utils.enums import AppRole
 
 
 class UserBase(BaseModel):
-    name: str
     email: str
-    role: str
+    role: AppRole
 
 
 class UserCreate(UserBase):

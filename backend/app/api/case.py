@@ -1,7 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+
+from app.auth.permissions import (
+    require_case_creation_permission,
+    validate_case_update_permission,
+    require_case_delete_permission,
+)
+
+from app.auth.dependencies import (
+    get_current_user,
+    get_current_officer,
+)
 
 from app.schemas.case import (
     CaseCreate,
@@ -10,15 +21,16 @@ from app.schemas.case import (
 )
 
 from app.services.case_service import (
-    get_all_cases,
-    get_case_by_id,
+    get_accessible_cases,
+    authorize_case_access,
+    validate_officer_assignment,
     create_case,
     update_case,
     delete_case,
 )
 
-from app.auth.dependencies import get_current_user
 from app.models.user import User
+from app.models.officer import Officer
 
 router = APIRouter(
     prefix="/cases",
@@ -32,9 +44,14 @@ router = APIRouter(
 )
 def read_cases(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    current_officer: Officer | None = Depends(get_current_officer)
 ):
-    return get_all_cases(db)
+    return get_accessible_cases(
+        db,
+        current_user,
+        current_officer
+    )
 
 
 @router.get(
@@ -44,17 +61,15 @@ def read_cases(
 def read_case(
     case_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    current_officer: Officer | None = Depends(get_current_officer)
 ):
-    case = get_case_by_id(db, case_id)
-
-    if case is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Case not found"
-        )
-
-    return case
+    return authorize_case_access(
+        db,
+        case_id,
+        current_user,
+        current_officer
+    )
 
 
 @router.post(
@@ -65,9 +80,27 @@ def read_case(
 def create_new_case(
     case: CaseCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    current_officer: Officer | None = Depends(get_current_officer)
 ):
-    return create_case(db, case)
+    # Role Permission
+    require_case_creation_permission(
+        current_user,
+        current_officer
+    )
+
+    # Officer Validation
+    validate_officer_assignment(
+        db,
+        case.officer_id,
+        current_user,
+        current_officer
+    )
+
+    return create_case(
+        db,
+        case
+    )
 
 
 @router.put(
@@ -78,36 +111,59 @@ def update_existing_case(
     case_id: int,
     case_update: CaseUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    current_officer: Officer | None = Depends(get_current_officer)
 ):
+    # Resource-Level Authorization
+    authorize_case_access(
+        db,
+        case_id,
+        current_user,
+        current_officer
+    )
+
+    # Field-Level Authorization
+    validate_case_update_permission(
+        case_update,
+        current_user,
+        current_officer
+    )
+
     updated_case = update_case(
         db,
         case_id,
         case_update
     )
 
-    if updated_case is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Case not found"
-        )
-
     return updated_case
 
 
-@router.delete("/{case_id}")
+@router.delete(
+    "/{case_id}"
+)
 def delete_existing_case(
     case_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    current_officer: Officer | None = Depends(get_current_officer)
 ):
-    deleted_case = delete_case(db, case_id)
+    # Resource-Level Authorization
+    authorize_case_access(
+        db,
+        case_id,
+        current_user,
+        current_officer
+    )
 
-    if deleted_case is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Case not found"
-        )
+    # Delete Permission
+    require_case_delete_permission(
+        current_user
+    )
+
+    delete_case(
+        db,
+        case_id
+    )
 
     return {
         "message": "Case deleted successfully"

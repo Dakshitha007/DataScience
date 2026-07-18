@@ -10,17 +10,44 @@ class Case(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    case_number = Column(String(50), unique=True, nullable=False)
+    case_number = Column(
+        String(50),
+        unique=True,
+        nullable=False
+    )
 
-    title = Column(String(200), nullable=False)
+    title = Column(
+        String(200),
+        nullable=False
+    )
 
-    description = Column(Text, nullable=False)
+    description = Column(
+        Text,
+        nullable=False
+    )
 
-    status = Column(String(50), nullable=False)
+    status = Column(
+        String(50),
+        nullable=False
+    )
 
-    priority = Column(String(20), nullable=False)
+    priority = Column(
+        String(20),
+        nullable=False
+    )
 
-    officer_id = Column(Integer, ForeignKey("officers.id"), nullable=False)
+    # Station where the case belongs
+    station = Column(
+        String(100),
+        nullable=False
+    )
+
+    # Assigned Officer
+    officer_id = Column(
+        Integer,
+        ForeignKey("officers.id"),
+        nullable=False
+    )
 
     created_at = Column(
         DateTime(timezone=True),
@@ -34,18 +61,43 @@ class Case(Base):
     )
 
     # Relationships
-    officer = relationship("Officer", back_populates="cases")
 
-    crimes = relationship("Crime", back_populates="case")
+    officer = relationship(
+        "Officer",
+        back_populates="cases"
+    )
 
-    victims = relationship("Victim", back_populates="case")
+    crimes = relationship(
+        "Crime",
+        back_populates="case"
+    )
 
-    suspects = relationship("Suspect", back_populates="case")
+    victims = relationship(
+        "Victim",
+        back_populates="case"
+    )
 
-    evidence = relationship("Evidence", back_populates="case")
+    suspects = relationship(
+        "Suspect",
+        back_populates="case"
+    )
 
-    chat_history = relationship("ChatHistory", back_populates="case")
+    evidence = relationship(
+        "Evidence",
+        back_populates="case"
+    )
 
-    ai_reports = relationship("AIReport", back_populates="case")
+    chat_history = relationship(
+        "ChatHistory",
+        back_populates="case"
+    )
 
-    predictions = relationship("Prediction", back_populates="case")
+    ai_reports = relationship(
+        "AIReport",
+        back_populates="case"
+    )
+
+    predictions = relationship(
+        "Prediction",
+        back_populates="case"
+    )

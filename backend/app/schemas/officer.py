@@ -1,14 +1,17 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from app.utils.enums import Designation
 
 
 class OfficerBase(BaseModel):
+    user_id: int
     badge_number: str
     name: str
-    rank: str
+    designation: Designation
     station: str
     phone: str
-    email: str
 
 
 class OfficerCreate(OfficerBase):
