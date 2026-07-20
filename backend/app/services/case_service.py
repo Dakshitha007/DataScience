@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 
 from app.models.case import Case
 from app.models.user import User
@@ -9,23 +9,25 @@ from app.schemas.case import CaseCreate, CaseUpdate
 from app.utils.enums import AppRole, Designation
 
 
-def get_accessible_cases(
+def get_accessible_cases_query(
     db: Session,
     current_user: User,
     current_officer: Officer | None
-):
+) -> Query:
     # Admin -> Every case
     if current_user.role == AppRole.ADMIN.value:
-        return db.query(Case).all()
+        return db.query(Case)
 
     # Inspector -> Cases from their station
-    if current_officer.designation == Designation.INSPECTOR.value:
+    if (
+        current_officer is not None
+        and current_officer.designation == Designation.INSPECTOR.value
+    ):
         return (
             db.query(Case)
             .filter(
                 Case.station == current_officer.station
             )
-            .all()
         )
 
     # Sub Inspector -> Assigned cases only
@@ -34,8 +36,21 @@ def get_accessible_cases(
         .filter(
             Case.officer_id == current_officer.id
         )
-        .all()
     )
+
+
+def get_accessible_cases(
+    db: Session,
+    current_user: User,
+    current_officer: Officer | None
+):
+    query = get_accessible_cases_query(
+        db,
+        current_user,
+        current_officer
+    )
+
+    return query.all()
 
 
 def authorize_case_access(
@@ -61,7 +76,10 @@ def authorize_case_access(
         return case
 
     # Inspector -> Same station only
-    if current_officer.designation == Designation.INSPECTOR.value:
+    if (
+        current_officer is not None
+        and current_officer.designation == Designation.INSPECTOR.value
+    ):
         if case.station != current_officer.station:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
