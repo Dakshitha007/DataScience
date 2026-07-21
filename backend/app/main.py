@@ -7,21 +7,15 @@ from app.api.officers import router as officers_router
 from app.api.case import router as case_router
 from app.api.investigation import router as investigation_router
 from app.api.evidence import router as evidence_router
+from app.api.police_station import router as police_station_router
+from app.api.criminal import router as criminal_router
 
 from app.database.connection import engine
-from app.database.init_db import init_db
-
 
 app = FastAPI(
     title="CrimeMind AI",
     version="1.0.0"
 )
-
-
-@app.on_event("startup")
-def startup():
-    init_db()
-
 
 # ==========================
 # Register Routers
@@ -33,7 +27,8 @@ app.include_router(officers_router)
 app.include_router(case_router)
 app.include_router(investigation_router)
 app.include_router(evidence_router)
-
+app.include_router(criminal_router)
+app.include_router(police_station_router)
 
 # ==========================
 # Home Endpoint
@@ -44,7 +39,6 @@ def home():
     return {
         "message": "Welcome to CrimeMind AI 🚔"
     }
-
 
 # ==========================
 # Database Health Check

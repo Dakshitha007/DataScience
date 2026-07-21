@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from app.utils.enums import CasePriority, CaseStatus, OfficerRank
 
 
 class InvestigationDashboardResponse(BaseModel):
@@ -14,11 +16,15 @@ class InvestigationDashboardResponse(BaseModel):
 class CaseSummaryResponse(BaseModel):
     id: int
     case_number: str
+    fir_number: str
+    crime_type: str
     title: str
-    status: str
-    priority: str
-    station: str
+    status: CaseStatus
+    priority: CasePriority
+    police_station_id: int
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecentCasesResponse(BaseModel):
@@ -46,32 +52,37 @@ class InvestigationStatisticsResponse(BaseModel):
 class OfficerInfoResponse(BaseModel):
     id: int
     badge_number: str
-    name: str
-    designation: str
-    station: str
+    first_name: str
+    last_name: str
+    rank: OfficerRank
+    phone: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CaseDetailsResponse(BaseModel):
     id: int
     case_number: str
+    fir_number: str
+    crime_type: str
     title: str
     description: str
-
-    status: str
-    priority: str
-    station: str
-
-    officer: OfficerInfoResponse
-
+    status: CaseStatus
+    priority: CasePriority
+    police_station_id: int
+    officers: list[OfficerInfoResponse]
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OfficerWorkloadResponse(BaseModel):
     officer_id: int
     badge_number: str
-    name: str
-    designation: str
-    station: str
-
+    first_name: str
+    last_name: str
+    rank: OfficerRank
     total_cases: int
     open_cases: int
     under_investigation_cases: int

@@ -85,5 +85,11 @@ class Evidence(Base):
 
     case = relationship(
         "Case",
-        back_populates="evidences",
+        back_populates="evidence",
+    )
+
+    files = relationship(
+        "EvidenceFile",
+        back_populates="evidence",
+        cascade="all, delete-orphan",
     )

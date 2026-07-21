@@ -1,20 +1,40 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database.base import Base
+from app.utils.enums import (
+    OfficerRank,
+    OfficerStatus,
+)
 
 
 class Officer(Base):
     __tablename__ = "officers"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    # Link Officer to User
     user_id = Column(
         Integer,
         ForeignKey("users.id"),
         unique=True,
+        nullable=False
+    )
+
+    police_station_id = Column(
+        Integer,
+        ForeignKey("police_stations.id"),
         nullable=False
     )
 
@@ -24,18 +44,18 @@ class Officer(Base):
         nullable=False
     )
 
-    name = Column(
-        String(100),
-        nullable=False
-    )
-
-    designation = Column(
+    first_name = Column(
         String(50),
         nullable=False
     )
 
-    station = Column(
-        String(100),
+    last_name = Column(
+        String(50),
+        nullable=False
+    )
+
+    rank = Column(
+        Enum(OfficerRank),
         nullable=False
     )
 
@@ -44,19 +64,37 @@ class Officer(Base):
         nullable=False
     )
 
+    status = Column(
+        Enum(OfficerStatus),
+        nullable=False,
+        default=OfficerStatus.ACTIVE,
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()
     )
 
-    # One-to-One Relationship with User
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    # Relationships
+
     user = relationship(
         "User",
         back_populates="officer"
     )
 
-    # One-to-Many Relationship with Cases
-    cases = relationship(
-        "Case",
-        back_populates="officer"
+    police_station = relationship(
+        "PoliceStation",
+        back_populates="officers"
+    )
+
+    case_assignments = relationship(
+        "CaseAssignment",
+        back_populates="officer",
+        cascade="all, delete-orphan"
     )

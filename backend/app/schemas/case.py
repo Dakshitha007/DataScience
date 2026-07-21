@@ -1,30 +1,42 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
+
+from app.utils.enums import CasePriority, CaseStatus
 
 
 class CaseBase(BaseModel):
     case_number: str
+    fir_number: str
+    crime_type: str
     title: str
     description: str
-    status: str
-    priority: str
-    station: str
-    officer_id: int
+    status: CaseStatus
+    priority: CasePriority
+    police_station_id: int
 
 
-class CaseCreate(CaseBase):
-    pass
+class CaseCreate(BaseModel):
+    case_number: str
+    fir_number: str
+    crime_type: str
+    title: str
+    description: str
+    status: CaseStatus
+    priority: CasePriority
+    police_station_id: int
 
 
 class CaseUpdate(BaseModel):
-    case_number: str | None = None
-    title: str | None = None
-    description: str | None = None
-    status: str | None = None
-    priority: str | None = None
-    station: str | None = None
-    officer_id: int | None = None
+    case_number: Optional[str] = None
+    fir_number: Optional[str] = None
+    crime_type: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[CaseStatus] = None
+    priority: Optional[CasePriority] = None
+    police_station_id: Optional[int] = None
 
 
 class CaseResponse(CaseBase):
@@ -32,6 +44,4 @@ class CaseResponse(CaseBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)

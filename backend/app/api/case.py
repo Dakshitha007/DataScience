@@ -23,7 +23,6 @@ from app.schemas.case import (
 from app.services.case_service import (
     get_accessible_cases,
     authorize_case_access,
-    validate_officer_assignment,
     create_case,
     update_case,
     delete_case,
@@ -85,14 +84,6 @@ def create_new_case(
 ):
     # Role Permission
     require_case_creation_permission(
-        current_user,
-        current_officer
-    )
-
-    # Officer Validation
-    validate_officer_assignment(
-        db,
-        case.officer_id,
         current_user,
         current_officer
     )

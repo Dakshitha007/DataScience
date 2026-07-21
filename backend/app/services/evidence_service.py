@@ -1,14 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from app.services.case_service import (
-    authorize_case_access,
-    get_accessible_cases_query,
-)
 
-from app.schemas.evidence import (
-    EvidenceListResponse,
-    EvidenceSummaryResponse,
-)
 from app.models.case import Case
 from app.models.evidence import Evidence
 from app.models.officer import Officer
@@ -16,20 +8,17 @@ from app.models.user import User
 
 from app.schemas.evidence import (
     EvidenceCreate,
+    EvidenceDashboardResponse,
+    EvidenceListResponse,
     EvidenceResponse,
+    EvidenceStatisticsResponse,
+    EvidenceSummaryResponse,
+    EvidenceUpdate,
 )
 
 from app.services.case_service import (
     authorize_case_access,
-)
-from app.schemas.evidence import (
-    EvidenceCreate,
-    EvidenceUpdate,
-    EvidenceResponse,
-    EvidenceSummaryResponse,
-    EvidenceListResponse,
-    EvidenceDashboardResponse,
-    EvidenceStatisticsResponse,
+    get_accessible_cases_query,
 )
 
 from app.utils.enums import (
@@ -42,7 +31,6 @@ def create_evidence(
     current_user: User,
     current_officer: Officer | None,
 ):
-    # Check RBAC
     authorize_case_access(
         db=db,
         case_id=evidence.case_id,
@@ -54,12 +42,12 @@ def create_evidence(
         case_id=evidence.case_id,
         title=evidence.title,
         description=evidence.description,
-        evidence_type=evidence.evidence_type,
+        evidence_type=evidence.evidence_type.value,
         location_found=evidence.location_found,
         collected_by=evidence.collected_by,
         collection_date=evidence.collection_date,
         storage_location=evidence.storage_location,
-        status=evidence.status,
+        status=evidence.status.value,
     )
 
     db.add(db_evidence)
@@ -113,7 +101,9 @@ def get_all_evidence(
         .filter(
             Evidence.case_id.in_(accessible_cases)
         )
-        .order_by(Evidence.created_at.desc())
+        .order_by(
+            Evidence.created_at.desc()
+        )
         .all()
     )
 
@@ -138,8 +128,12 @@ def get_case_evidence(
 
     evidence = (
         db.query(Evidence)
-        .filter(Evidence.case_id == case_id)
-        .order_by(Evidence.collection_date.desc())
+        .filter(
+            Evidence.case_id == case_id
+        )
+        .order_by(
+            Evidence.collection_date.desc()
+        )
         .all()
     )
 
@@ -154,8 +148,8 @@ def search_evidence(
     current_user: User,
     current_officer: Officer | None,
     title: str | None = None,
-    evidence_type: str | None = None,
-    status: str | None = None,
+    evidence_type: EvidenceType | None = None,
+    status: EvidenceStatus | None = None,
 ):
     accessible_cases = (
         get_accessible_cases_query(
@@ -181,16 +175,18 @@ def search_evidence(
 
     if evidence_type:
         query = query.filter(
-            Evidence.evidence_type == evidence_type
+            Evidence.evidence_type == evidence_type.value
         )
 
     if status:
         query = query.filter(
-            Evidence.status == status
+            Evidence.status == status.value
         )
 
     evidence = (
-        query.order_by(Evidence.collection_date.desc())
+        query.order_by(
+            Evidence.collection_date.desc()
+        )
         .all()
     )
 
@@ -229,6 +225,16 @@ def update_evidence(
     update_data = evidence_update.model_dump(
         exclude_unset=True
     )
+
+    if "evidence_type" in update_data:
+        update_data["evidence_type"] = (
+            update_data["evidence_type"].value
+        )
+
+    if "status" in update_data:
+        update_data["status"] = (
+            update_data["status"].value
+        )
 
     for key, value in update_data.items():
         setattr(evidence, key, value)
@@ -280,23 +286,31 @@ def get_dashboard_summary(
             current_officer,
         )
         .with_entities(Case.id)
+        .subquery()
     )
 
-    query = db.query(Evidence).filter(
-        Evidence.case_id.in_(accessible_case_ids)
+    query = (
+        db.query(Evidence)
+        .filter(
+            Evidence.case_id.in_(accessible_case_ids)
+        )
     )
 
     return EvidenceDashboardResponse(
         total_evidence=query.count(),
+
         collected=query.filter(
             Evidence.status == EvidenceStatus.COLLECTED.value
         ).count(),
+
         in_analysis=query.filter(
             Evidence.status == EvidenceStatus.IN_ANALYSIS.value
         ).count(),
+
         verified=query.filter(
             Evidence.status == EvidenceStatus.VERIFIED.value
         ).count(),
+
         archived=query.filter(
             Evidence.status == EvidenceStatus.ARCHIVED.value
         ).count(),
@@ -313,10 +327,14 @@ def get_evidence_statistics(
             current_officer,
         )
         .with_entities(Case.id)
+        .subquery()
     )
 
-    query = db.query(Evidence).filter(
-        Evidence.case_id.in_(accessible_case_ids)
+    query = (
+        db.query(Evidence)
+        .filter(
+            Evidence.case_id.in_(accessible_case_ids)
+        )
     )
 
     return EvidenceStatisticsResponse(

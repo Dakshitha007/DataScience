@@ -1,103 +1,107 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    ForeignKey,
+    Enum,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
 from app.database.base import Base
-
+from app.utils.enums import CaseStatus, CasePriority
 
 class Case(Base):
     __tablename__ = "cases"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     case_number = Column(
         String(50),
         unique=True,
-        nullable=False
+        nullable=False,
+    )
+
+    fir_number = Column(
+        String(50),
+        unique=True,
+        nullable=False,
+    )
+
+    crime_type = Column(
+        String(100),
+        nullable=False,
     )
 
     title = Column(
         String(200),
-        nullable=False
+        nullable=False,
     )
 
     description = Column(
         Text,
-        nullable=False
+        nullable=False,
     )
 
     status = Column(
-        String(50),
-        nullable=False
+    Enum(CaseStatus),
+    nullable=False,
     )
 
     priority = Column(
-        String(20),
-        nullable=False
+    Enum(CasePriority),
+    nullable=False,
     )
 
-    # Station where the case belongs
-    station = Column(
-        String(100),
-        nullable=False
-    )
-
-    # Assigned Officer
-    officer_id = Column(
+    police_station_id = Column(
         Integer,
-        ForeignKey("officers.id"),
-        nullable=False
+        ForeignKey("police_stations.id"),
+        nullable=False,
     )
 
     created_at = Column(
         DateTime(timezone=True),
-        server_default=func.now()
+        server_default=func.now(),
     )
 
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=func.now(),
     )
 
     # Relationships
 
-    officer = relationship(
-        "Officer",
-        back_populates="cases"
+    police_station = relationship(
+        "PoliceStation",
+        back_populates="cases",
     )
 
-    crimes = relationship(
-        "Crime",
-        back_populates="case"
+    case_assignments = relationship(
+        "CaseAssignment",
+        back_populates="case",
+        cascade="all, delete-orphan",
     )
 
-    victims = relationship(
-        "Victim",
-        back_populates="case"
-    )
-
-    suspects = relationship(
-        "Suspect",
-        back_populates="case"
+    criminals = relationship(
+        "CaseCriminal",
+        back_populates="case",
+        cascade="all, delete-orphan",
     )
 
     evidence = relationship(
         "Evidence",
-        back_populates="case"
+        back_populates="case",
+        cascade="all, delete-orphan",
     )
 
-    chat_history = relationship(
-        "ChatHistory",
-        back_populates="case"
-    )
-
-    ai_reports = relationship(
-        "AIReport",
-        back_populates="case"
-    )
-
-    predictions = relationship(
-        "Prediction",
-        back_populates="case"
+    activities = relationship(
+        "CaseActivity",
+        back_populates="case",
+        cascade="all, delete-orphan",
     )
